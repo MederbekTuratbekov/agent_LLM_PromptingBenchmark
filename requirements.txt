@@ -1,3 +1,4 @@
 openai>=1.30.0
 pydantic>=2.6.0
 datasets>=2.19.0
+python-dotenv>=1.0.0
