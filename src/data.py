@@ -68,13 +68,3 @@ def load_few_shot_examples(n: int = 3, seed: int = 123) -> list[dict]:
         })
 
     return examples
-
-
-if __name__ == "__main__":
-    # быстрая проверка что всё грузится корректно
-    samples = load_squad_sample(n=3)
-    for s in samples:
-        print(f"Q: {s['question']}")
-        print(f"A: {s['answer']}")
-        print(f"Context: {s['context'][:100]}...")
-        print("---")

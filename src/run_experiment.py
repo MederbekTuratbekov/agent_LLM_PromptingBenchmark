@@ -155,7 +155,3 @@ def save_results(results: list[ExperimentResult], path: str = "results.jsonl"):
             f.write(r.model_dump_json() + "\n")
     print(f"Сохранено {len(results)} результатов в {path}")
 
-
-if __name__ == "__main__":
-    results = run_full_experiment(n_questions=20)
-    save_results(results)

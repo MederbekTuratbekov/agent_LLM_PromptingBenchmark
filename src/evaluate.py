@@ -103,13 +103,3 @@ def print_report(report: dict):
     worst = sorted_items[-1]
     print(f"Лучшая конфигурация: {best[0]} — {best[1]['accuracy']*100:.1f}%")
     print(f"Худшая конфигурация: {worst[0]} — {worst[1]['accuracy']*100:.1f}%")
-
-
-if __name__ == "__main__":
-    results = load_results("results.jsonl")
-    report = evaluate(results)
-    print_report(report)
-
-    # сохраняем отчёт отдельно — пригодится для README проекта
-    with open("report.json", "w", encoding="utf-8") as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
