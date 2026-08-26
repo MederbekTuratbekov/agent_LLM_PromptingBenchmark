@@ -13,8 +13,8 @@
     5. Отчёт выведется в консоль и сохранится в report.json
 """
 
-from run_experiment import run_full_experiment, save_results
-from evaluate import load_results, evaluate, print_report
+from src.run_experiment import run_full_experiment, save_results
+from src.evaluate import load_results, evaluate, print_report
 
 
 def main():
