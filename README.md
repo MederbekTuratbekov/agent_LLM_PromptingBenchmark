@@ -51,6 +51,8 @@ python main.py
 llm-prompting-benchmark/
 ├── README.md
 ├── requirements.txt
+├── .env
+├── .env.example
 ├── .gitignore
 └── src/
     ├── main.py
