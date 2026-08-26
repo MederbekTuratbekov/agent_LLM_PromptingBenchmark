@@ -21,7 +21,7 @@ def main():
     print("=== Запуск эксперимента: LLM Basics + Prompting ===\n")
 
     print("Шаг 1/3: прогон вопросов через API...")
-    results = run_full_experiment(n_questions=20)
+    results = run_full_experiment(n_questions=50) # было 20
     save_results(results)
 
     print("\nШаг 2/3: загрузка результатов для оценки...")

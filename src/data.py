@@ -27,7 +27,7 @@ def load_squad_sample(n: int = 25, seed: int = 42) -> list[dict]:
             "answer": str,    # правильный короткий ответ
         }
     """
-    dataset = load_dataset("squad", split="validation")
+    dataset = load_dataset("rajpurkar/squad", split="validation")
     shuffled = dataset.shuffle(seed=seed)
     sample = shuffled.select(range(n))
 
@@ -54,7 +54,7 @@ def load_few_shot_examples(n: int = 3, seed: int = 123) -> list[dict]:
     примеры НЕ пересекались с вопросами, на которых тестируем модель.
     Иначе эксперимент будет нечестным — модель просто "подсмотрит" ответ.
     """
-    dataset = load_dataset("squad", split="train")
+    dataset = load_dataset("rajpurkar/squad", split="train")
     shuffled = dataset.shuffle(seed=seed)
     sample = shuffled.select(range(n))
 
