@@ -1,65 +1,104 @@
-# LLM Basics + Prompting
+# LLM Prompting Benchmark
 
-Часть 1 из 5 в серии проектов по блоку `agent_junior`.
+Эксперимент, который сравнивает три техники промптинга — **base**, **few-shot** и **Chain-of-Thought** — на задаче question answering (датасет [SQuAD](https://huggingface.co/datasets/rajpurkar/squad)). Плюс отдельно проверяется влияние `temperature` на точность.
 
-## Problem
+Каждый вопрос прогоняется через 5 конфигураций, ответы валидируются через Pydantic-схемы, точность считается автоматически и выводится в виде отчёта.
 
-Нужно понять, как настройки sampling (temperature) и техники промптинга
-(few-shot, Chain-of-Thought) влияют на точность ответов LLM в задаче
-question answering.
+## Зачем
 
-## Approach
+Задача выглядит просто: дать модели контекст и вопрос, получить короткий ответ. Но результат сильно зависит от того, *как* сформулирован промпт. Проект отвечает на вопрос: какая техника даёт больше правильных ответов — и насколько.
 
-- Датасет: HuggingFace `squad` (20 вопросов из validation split)
-- Модель: `gpt-4o-mini` через OpenAI API
-- Структурированный вывод: JSON через Pydantic-схемы (`schemas.py`)
-- Протестированы 5 конфигураций:
-  - base, temperature=0.0
-  - base, temperature=0.7
-  - base, temperature=1.2
-  - few-shot (3 примера), temperature=0.0
-  - Chain-of-Thought, temperature=0.0
-- Метрика: accuracy — совпадение ответа модели с ground truth
-  (с нормализацией регистра и пунктуации)
+## Что тестируется
 
-## Results
+| # | Конфигурация | temperature | few-shot | CoT |
+|---|---|---|---|---|
+| 1 | base | 0.0 | ❌ | ❌ |
+| 2 | base | 0.7 | ❌ | ❌ |
+| 3 | base | 1.2 | ❌ | ❌ |
+| 4 | few-shot | 0.0 | ✅ | ❌ |
+| 5 | chain-of-thought | 0.0 | ❌ | ✅ |
 
-Точность по каждой конфигурации — в `report.json` после запуска.
-Формат:
-```
-base (temp=0.0)                 XX.X%
-few_shot (temp=0.0)             XX.X%
-chain_of_thought (temp=0.0)     XX.X%
-```
-
-## How to run
-
-```bash
-pip install -r requirements.txt
-
-# Windows PowerShell:
-$env:OPENAI_API_KEY="твой_ключ"
-
-python main.py
-```
-
-Результаты появятся в `results.jsonl` (сырые данные) и `report.json` (метрики).
+Few-shot и CoT-примеры берутся из **отдельного сплита** датасета (разные `seed`), чтобы не пересекаться с тестовыми вопросами — иначе точность была бы завышена искусственно.
 
 ## Структура проекта
 
 ```
 llm-prompting-benchmark/
-├── README.md
+├── src/
+│   ├── main.py             # точка входа
+│   ├── schemas.py          # Pydantic-модели ответов LLM и результатов
+│   ├── data.py              # загрузка squad (тестовая + few-shot выборки)
+│   ├── prompts.py           # сборка system/user промптов под каждую технику
+│   ├── run_experiment.py    # вызовы OpenAI API, прогон всех конфигураций
+│   └── evaluate.py          # сравнение с ground truth, подсчёт accuracy
 ├── requirements.txt
-├── .env
 ├── .env.example
-├── .gitignore
-└── src/
-    ├── main.py
-    ├── schemas.py         # Pydantic-модели для JSON-ответов
-    ├── data.py             # загрузка squad
-    ├── prompts.py           # base / few-shot / CoT промпты
-    ├── run_experiment.py      # прогон через API
-    ├── evaluate.py              # подсчёт accuracy
-    └── main.py                    # запуск всего пайплайна
+└── .gitignore
 ```
+
+## Установка
+
+```bash
+git clone https://github.com/<username>/llm-prompting-benchmark.git
+cd llm-prompting-benchmark
+pip install -r requirements.txt
+```
+
+Создай `.env` в корне проекта на основе `.env.example` и впиши свой ключ:
+
+```
+OPENAI_API_KEY=sk-...
+```
+
+## Запуск
+
+```bash
+cd src
+python main.py
+```
+
+Скрипт:
+1. Загрузит 50 случайных вопросов из `squad` (validation split)
+2. Прогонит каждый через 5 конфигураций (итого 250 вызовов API)
+3. Сохранит сырые результаты в `results.jsonl`
+4. Посчитает accuracy по каждой конфигурации и выведет отчёт в консоль
+
+Пример вывода:
+
+```
+=== РЕЗУЛЬТАТЫ ЭКСПЕРИМЕНТА ===
+
+chain_of_thought (temp=0.0)         82.0%  ████████████████    (41/50)
+few_shot (temp=0.0)                 78.0%  ███████████████     (39/50)
+base (temp=0.0)                     74.0%  ██████████████      (37/50)
+base (temp=0.7)                     68.0%  █████████████       (34/50)
+base (temp=1.2)                     52.0%  ██████████          (26/50)
+
+--- Выводы ---
+Лучшая конфигурация: chain_of_thought (temp=0.0) — 82.0%
+Худшая конфигурация: base (temp=1.2) — 52.0%
+```
+
+*(числа условные — реальные зависят от прогона)*
+
+## Как считается точность
+
+Ответ модели сравнивается с ground truth после нормализации (нижний регистр, обрезка пробелов и пунктуации). Ответ засчитывается верным, если строки совпадают полностью **или** правильный ответ содержится внутри ответа модели — модель может ответить развёрнуто (`"the river Nile"` вместо `"Nile"`), и это не должно считаться ошибкой.
+
+## Технологии
+
+- **OpenAI API** (`gpt-4o-mini`) — генерация ответов, `response_format=json_object`
+- **Pydantic** — строгая валидация структуры ответа модели (`answer`, `confidence`, `reasoning`)
+- **HuggingFace `datasets`** — загрузка SQuAD
+- **python-dotenv** — управление ключом API
+
+## Возможные улучшения
+
+- [ ] Добавить сравнение разных моделей (`gpt-4o-mini` vs `gpt-4o`)
+- [ ] Визуализация результатов (matplotlib / seaborn)
+- [ ] Self-consistency (несколько прогонов CoT + majority voting)
+- [ ] Логирование стоимости запросов (токены × цена)
+
+## Лицензия
+
+MIT
